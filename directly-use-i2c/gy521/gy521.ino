@@ -1,8 +1,20 @@
+/*
+Arduino UNO   GY521
+    A4         SDA
+    A5         SCL
+    VCC        5V
+    GND        GND
+*/
+
+// tem opções para calibrar
+ 
 #include <Wire.h>
 
 const int ADDRESS=0x68;
 
-int AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ;
+int AcX,AcY,AcZ;
+int Tmp;
+int GyX,GyY,GyZ;
 
 void setup() {
   Serial.begin(9600);

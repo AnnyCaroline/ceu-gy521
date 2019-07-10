@@ -1,0 +1,49 @@
+#include "wclock.ceu"
+#include "i2c.ceu"
+
+#define GY521_RA_PWR_MGMT_1       0x6B
+#define GY521_DEFAULT_ADDRESS     0x68
+#define GY521_RA_ACCEL_XOUT_H     0x3B
+
+var[1] byte gy521_command = [];
+
+_Serial.begin(9600);
+
+emit I2C(on,_);
+
+gy521_command = [0x68];
+await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+
+gy521_command = [0x00];
+await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+
+// LOOP
+loop do
+    gy521_command = [GY521_RA_ACCEL_XOUT_H];
+    await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+
+    var[14] byte gy521_return = [];
+
+    await I2C_Master_Receive(&gy521_return, GY521_DEFAULT_ADDRESS as u8, 14);
+    var int acX = (gy521_return[0]  << 8) + gy521_return[1];
+    var int acY = (gy521_return[2]  << 8) + gy521_return[3];
+    var int acZ = (gy521_return[4]  << 8) + gy521_return[5];
+    var int tmp = (gy521_return[6]  << 8) + gy521_return[7];
+    var int gyX = (gy521_return[8]  << 8) + gy521_return[9];
+    var int gyY = (gy521_return[10] << 8) + gy521_return[11];
+    var int gyZ = (gy521_return[12] << 8) + gy521_return[13];
+
+    _Serial.print("acX = ");    _Serial.print(acX);
+    _Serial.print(" | acY = "); _Serial.print(acY);
+    _Serial.print(" | acZ = "); _Serial.print(acZ);
+
+    _Serial.print(" | tmp = "); _Serial.print((tmp as real)/340.00+36.53);
+
+    _Serial.print(" | gyX = "); _Serial.print(gyX);
+    _Serial.print(" | gyY = "); _Serial.print(gyY);
+    _Serial.print(" | gyZ = "); _Serial.print(gyZ);
+
+    _Serial.println("");
+    
+    await 1s;
+end
