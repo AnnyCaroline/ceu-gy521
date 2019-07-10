@@ -1,0 +1,64 @@
+#include "wclock.ceu"
+#include "usart.ceu"
+#include "string.ceu"
+#include "i2c.ceu"
+
+#define GY521_RA_PWR_MGMT_1       0x6B
+#define GY521_DEFAULT_ADDRESS     0x68
+#define GY521_RA_ACCEL_XOUT_H     0x3B
+
+var[1] byte gy521_command = [];
+
+spawn USART_Init(9600);
+
+emit I2C(on,_);
+
+gy521_command = [0x68];
+await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+
+gy521_command = [0x00];
+await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+
+
+var[3] byte init;
+call String_Append_STR(&init, "i\n");
+await USART_Tx(&init);
+
+// LOOP
+loop do
+    gy521_command = [GY521_RA_ACCEL_XOUT_H];
+    await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+
+    var[14] byte gy521_return = [];
+
+    await I2C_Master_Receive(&gy521_return, GY521_DEFAULT_ADDRESS as u8, 14);
+    var int acX = (gy521_return[0]  << 8) + gy521_return[1];
+    var int acY = (gy521_return[2]  << 8) + gy521_return[3];
+    var int acZ = (gy521_return[4]  << 8) + gy521_return[5];
+    var int tmp = (gy521_return[6]  << 8) + gy521_return[7];
+    var int gyX = (gy521_return[8]  << 8) + gy521_return[9];
+    var int gyY = (gy521_return[10] << 8) + gy521_return[11];
+    var int gyZ = (gy521_return[12] << 8) + gy521_return[13];
+
+    var[172] byte str;
+    call String_Append_STR(&str, " | acX =");
+    call String_Append_INT(&str, acX, _);
+    call String_Append_STR(&str, " | acY = ");
+    call String_Append_INT(&str, acY, _);
+    call String_Append_STR(&str, " | acZ = ");
+    call String_Append_INT(&str, acZ, _);
+    call String_Append_STR(&str, " | tmp = ");
+    //ToDo Append_REAL
+    call String_Append_INT(&str, ((tmp as real)/340.00+36.53)as int, _);
+    call String_Append_STR(&str, " | gyX = ");
+    call String_Append_INT(&str, gyX, _);
+    call String_Append_STR(&str, " | gyY = ");
+    call String_Append_INT(&str, gyY, _);
+    call String_Append_STR(&str, " | gyZ =");
+    call String_Append_INT(&str, gyZ, _);
+    call String_Append_STR(&str, "\n\r");
+
+    await USART_Tx(&str);
+    
+    await 1s;
+end
