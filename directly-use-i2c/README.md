@@ -6,15 +6,18 @@ Also important: [GY30 driver](https://github.com/JingruiLea/ceu-arduino/blob/ljr
 
 ## Energy measurement
 
-### using Serial and -DCEU_PM_MIN
+### Using -DCEU_PM_MIN
 
-|                 | Arduino | Céu  (-DCEU_PM_MIN) |
-| --------------- | ------- | ------------------- |
-| Arduino UNO     | 53 mA   | 41.5 mA             |
-| Mini Ultra 8MHz | 9,08 mA | 2,97 mA             |
+|                 | Arduino | Céu (Serial and -DCEU_PM_MIN) | Céu (USART and -DCEU_PM_MIN) |
+| --------------- | ------- | ----------------------------- | ---------------------------- |
+| Arduino UNO     | 53 mA   | 41.5 mA                       | 41.6 mA                      |
+| Mini Ultra 8MHz | 9,08 mA | 2,97 mA                       | 2,96 mA                      |
 
-### using USART driver without -DCEU_PM_MIN
-|                 | Arduino | Céu  (-DCEU_PM_MIN) |
-| --------------- | ------- | ------------------- |
-| Arduino UNO     | 53 mA   | 41.5 mA             |
-| Mini Ultra 8MHz | 2,97 mA | 9,08 mA             |
+There is no difference between using the USART driver and the Arduino Serial when using the -DCEU_PM_MIN (minimum power saving mode), in this case, at least.
+
+### Using sleep mode (without -DCEU_PM_MIN)
+
+|                 | Arduino | Céu (Serial and -DCEU_PM_MIN) |
+| --------------- | ------- | ----------------------------- |
+| Arduino UNO     | 53 mA   | 39.6 mA                       |
+| Mini Ultra 8MHz | 9,08 mA | 2.45 mA                       |
