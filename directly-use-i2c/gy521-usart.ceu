@@ -14,16 +14,9 @@ spawn USART_Init(9600);
 {ceu_pm_set(CEU_PM_TWI, 1);}
 emit I2C(on,_);
 
-gy521_command = [0x68];
-await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
-
-gy521_command = [0x00];
-await I2C_Master_Send(&gy521_command, GY521_DEFAULT_ADDRESS as u8);
+var[2] byte gy521_setSleepEnabledFalse = [GY521_RA_PWR_MGMT_1, 0x00];
+await I2C_Master_Send(&gy521_setSleepEnabledFalse, GY521_DEFAULT_ADDRESS as u8);
 {ceu_pm_set(CEU_PM_TWI, 0);}
-
-var[3] byte init;
-call String_Append_STR(&init, "i\n");
-await USART_Tx(&init);
 
 // LOOP
 loop do
