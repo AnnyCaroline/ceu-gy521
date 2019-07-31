@@ -1,0 +1,102 @@
+///////////////////////////////////////////////////////////////////////////////
+// EXTERNAL INTERFACE
+///////////////////////////////////////////////////////////////////////////////
+code/await I2CDEV_readBytes(var byte devAddr, var byte regAddr, var int length, var&[] byte wdata, var int? timeout) -> int;
+code/await I2CDEV_readByte(var byte devAddr, var byte regAddr, var&[] byte rdata, var int? timeout) -> int;
+
+code/await I2CDEV_writeBytes(var byte devAddr, var byte regAddr, var int length, var&[] byte wdata) -> bool;
+code/await I2CDEV_writeByte(var byte devAddr, var byte regAddr, var&[] byte wdata) -> bool;
+
+code/await I2CDEV_writeBits(var byte devAddr, var byte regAddr, var int bitStart, var int length, var byte wdata) -> bool;
+code/await I2CDEV_writeBit(var byte devAddr, var byte regAddr, var int bitNum, var byte wdata) -> bool;
+
+///////////////////////////////////////////////////////////////////////////////
+// ABSTRACTIONS
+///////////////////////////////////////////////////////////////////////////////
+
+code/await I2CDEV_readBytes(var byte devAddr, var byte regAddr, var int length, var&[] byte wdata, var int? timeout) -> int do
+    var int count = 0;
+
+    par/or do
+        if (timeout?) then
+            await (timeout!)ms;
+            escape -1;
+        else
+            await FOREVER;
+        end
+    with
+        var int min = length; //min(length, BUFFER_LENGTH)
+        if (I2C_BUF_MAX < length) then
+            min = I2C_BUF_MAX;
+        end
+
+        // Wire.beginTransmission(devAddr);
+        // Wire.write(regAddr);
+        // Wire.endTransmission();
+        var[1] byte gy521_command = [regAddr];
+        await I2C_Master_Send(&gy521_command, devAddr as u8);
+
+
+        // Wire.beginTransmission(devAddr);
+        // Wire.requestFrom(devAddr, (uint8_t)min(length - k, BUFFER_LENGTH));
+        // for (; Wire.available() && (timeout == 0 || millis() - t1 < timeout); count++) {
+        //     data[count] = Wire.read();
+        // }
+        //await I2C_Master_Receive(&wdata, devAddr, length-k); //3nd parameter should be (uint8_t)min(length - k, BUFFER_LENGTH)
+        await I2C_Master_Receive(&wdata, devAddr, min); //3nd parameter should be (uint8_t)min(length - k, BUFFER_LENGTH)
+        count  = $wdata as int;
+    end
+
+    escape count;
+end
+
+code/await I2CDEV_readByte(var byte devAddr, var byte regAddr, var&[] byte rdata, var int? timeout) -> int do
+    var int ret = await I2CDEV_readBytes(devAddr, regAddr, 1, &rdata, timeout);
+    escape ret;
+end
+
+code/await I2CDEV_writeBytes(var byte devAddr, var byte regAddr, var int length, var&[] byte wdata) -> bool do
+    var int status = 0;
+
+    var[200] byte gy521_command = [regAddr] .. wdata; //ToDo: tamanho do vetor deveria ser length + 1
+    var bool ret = await I2C_Master_Send(&gy521_command, devAddr as u8);
+    escape ret;
+end
+
+code/await I2CDEV_writeByte(var byte devAddr, var byte regAddr, var&[] byte wdata) -> bool do
+    var bool ret = await I2CDEV_writeBytes(devAddr, regAddr, 1, &wdata);
+    escape ret;
+end
+
+code/await I2CDEV_writeBit(var byte devAddr, var byte regAddr, var int bitNum, var byte wdata) -> bool do
+    var[1] byte b = [0x00];
+    await I2CDEV_readByte(devAddr, regAddr, &b, _);
+
+    if (wdata != 0) then
+        b[0] = b[0] | (1<<bitNum);
+    else
+        b[0] = b[0] & ~(1<<bitNum);
+    end
+
+    var bool ret = await I2CDEV_writeByte(devAddr, regAddr, &b);
+    escape ret;
+end
+
+code/await I2CDEV_writeBits(var byte devAddr, var byte regAddr, var int bitStart, var int length, var byte wdata) -> bool do
+    var[1] byte b = [0x00];
+
+    var int readByteRet = await I2CDEV_readByte(devAddr, regAddr, &b, _);
+    if (readByteRet != 0 ) then
+        var byte mask = ((1 << length) - 1) << (bitStart - length + 1);
+        wdata = wdata << (bitStart - length + 1); // shift data into correct position
+        wdata = wdata & mask; // zero all non-important bits in data
+
+        b[0] = b[0] & ~(mask); // zero all important bits in existing byte
+        b[0] = b[0] | wdata; // combine data with existing byte
+
+        var bool ret = await I2CDEV_writeByte(devAddr, regAddr, &b);
+        escape ret;
+    else
+        escape false;
+    end
+end

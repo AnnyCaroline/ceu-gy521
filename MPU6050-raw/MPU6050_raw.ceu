@@ -1,0 +1,43 @@
+#include "wclock.ceu"
+#include "i2c.ceu"
+#include "i2cdev.ceu"
+#include "mpu6050.ceu"
+
+_Serial.begin(9600);
+
+emit I2C(on,_);
+
+await MPU6050_Init(0x68);
+
+var int ax=0; var int ay=0; var int az=0;
+var int gx=0; var int gy=0; var int gz=0;
+
+_Serial.println("\n-ACC-----------------");
+await MPU6050_getAcceleration(&ax, &ay, &az);
+_Serial.println(ax);
+_Serial.println(ay);
+_Serial.println(az);
+
+_Serial.println("\n-TMP-----------------");
+var int raw_tmp = await MPU6050_getTemperature();
+var real tmp = (raw_tmp as real)/340.00+36.53;
+_Serial.println(raw_tmp);
+_Serial.println(tmp);
+
+_Serial.println("\n-ROT-----------------");
+await MPU6050_getRotation(&gx, &gy, &gz);
+_Serial.println(gx);
+_Serial.println(gy);
+_Serial.println(gz);
+
+_Serial.println("\n-M6-----------------");
+
+await MPU6050_getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+_Serial.println(ax);
+_Serial.println(ay);
+_Serial.println(az);
+_Serial.println(gx);
+_Serial.println(gy);
+_Serial.println(gz);
+
+await FOREVER;
