@@ -17,7 +17,7 @@ void setup() {
     Serial.println("Initializing I2C devices...");
     accelgyro.initialize();
 
-    accelgyro.setSleepEnabled(true);
+    //accelgyro.setSleepEnabled(true);
 
     Serial.println("Testing device connections...");
     //Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
